@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # --- CARGA DEL LOGO Y MANEJO DE ERRORES ---
-LOGO_PATH = "logo_electronica_julio.png" # Nombre exacto del archivo de imagen
+LOGO_PATH = "logo_electronica_julio.png.jpg" # Nombre exacto del archivo de imagen
 logo_image = None
 try:
     if os.path.exists(LOGO_PATH):
