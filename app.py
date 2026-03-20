@@ -31,6 +31,51 @@ st.markdown("""
     .whatsapp-btn:hover {
         background-color: #1DA851;
     }
+    /* --- FOOTER FIJO Y ELEGANTE (INPUT DE CHAT) --- */
+    
+    /* 1. Dale espacio al chat para que el texto no quede tapado por la caja de abajo */
+    [data-testid="stChatMessageContainer"] {
+        padding-bottom: 100px !important; 
+    }
+
+    /* 2. Pinta toda la franja inferior (el fondo del footer) de gris oscuro carbón */
+    [data-testid="stBottom"] > div {
+        background-color: #1E1E1E !important;
+        border-top: 1px solid #333333;
+        padding-top: 15px;
+        padding-bottom: 15px;
+    }
+
+    /* 3. Haz que la caja de texto sea redondeada, con borde sutil y fondo gris medio */
+    .stChatInputContainer {
+        border-radius: 25px !important;
+        border: 1px solid #333333 !important;
+        background-color: #333333 !important;
+    }
+    
+    /* 4. Asegura que el texto que escriba el usuario ahí adentro sea blanco */
+    .stChatInputContainer textarea {
+        color: #FFFFFF !important;
+        background-color: #333333 !important;
+        font-size: 1rem;
+    }
+    /* --- COPYRIGHT FOOTER (Electrónica Julio 2026) --- */
+    .copyright {
+        position: fixed;
+        bottom: 5px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        color: #666666; /* Gris sutil para que no distraiga */
+        font-size: 0.75rem;
+        z-index: 1000;
+        font-family: sans-serif;
+    }
+    
+    /* Subimos un poquito el input del chat para que no aplaste el texto */
+    [data-testid="stBottom"] {
+        margin-bottom: 25px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -49,7 +94,7 @@ with col2:
 st.markdown("<p style='text-align: center; color: #888888; margin-top: -10px;'>Asistente Inteligente de Triaje (MVP)</p>", unsafe_allow_html=True)
 st.divider()
 
-# --- 4. CONFIGURACIÓN DE IA (MÉTODO INFALIBLE) ---
+# --- 4. CONFIGURACIÓN DE IA (BÚSQUEDA DINÁMICA A PRUEBA DE ERRORES) ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
@@ -66,47 +111,64 @@ Reglas:
 5. Derivación: Cuando determines que necesita taller, dile: "Para coordinar, haz clic en el botón de abajo y envíale un WhatsApp a Julio con el resumen de tu falla."
 """
 
-# Usamos gemini-pro que es 100% estable en todas las regiones y versiones
-model = genai.GenerativeModel('gemini-pro')
+# Función que busca el mejor modelo disponible en tu API Key en tiempo real
+@st.cache_resource
+def get_best_model():
+    modelos_disponibles = []
+    try:
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                if 'flash' in m.name.lower():
+                    return m.name # Priorizamos la versión más rápida (Flash)
+                modelos_disponibles.append(m.name)
+        
+        # Si no encuentra Flash, usa el primero de texto que funcione
+        if modelos_disponibles:
+            return modelos_disponibles[0]
+    except Exception as e:
+        return None
 
-# --- 5. LÓGICA DE CHAT MANUAL (A prueba de errores) ---
+nombre_modelo_real = get_best_model()
+
+if not nombre_modelo_real:
+    st.error("Tu API Key actual no tiene acceso a los modelos de texto. Revisa tu cuenta en Google AI Studio.")
+    st.stop()
+
+# Iniciamos el modelo con el nombre exacto que Google aprobó
+model = genai.GenerativeModel(nombre_modelo_real)
+
+# --- 5. LÓGICA DE CHAT MANUAL ---
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Soy el Asistente Inteligente de Electrónica Julio. 😊 Contame, ¿qué equipo te está dando problemas (Smart TV, aire, audio, heladera...) y qué le pasa?"}]
 
-# Renderizar mensajes visuales
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Input del usuario
 if prompt := st.chat_input("Escribe tu consulta aquí..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    # Preparar el historial estrictamente alternado para engañar a la API y que no falle
     gemini_history = [
         {"role": "user", "parts": [SYSTEM_PROMPT]},
         {"role": "model", "parts": ["Entendido. Actuaré estrictamente bajo estas reglas como el asistente de Julio."]}
     ]
     
-    # Añadir la conversación real
     for msg in st.session_state.messages:
         role = "model" if msg["role"] == "assistant" else "user"
         gemini_history.append({"role": role, "parts": [msg["content"]]})
 
-    # Respuesta de la IA
     with st.chat_message("assistant"):
         try:
-            # Enviamos el paquete completo
             response = model.generate_content(gemini_history)
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
 
-            # --- BOTÓN DE WHATSAPP DINÁMICO ---
+            # --- BOTÓN DE WHATSAPP ---
             palabras_clave = ["taller", "presupuesto", "coordinar", "revisar", "traer"]
             if any(palabra in response.text.lower() for palabra in palabras_clave):
-                NUMERO_WHATSAPP = "5493810000000" # <-- ¡Recuerda poner el número real aquí!
+                NUMERO_WHATSAPP = "5493810000000" # <-- Reemplazar por el de Julio
                 resumen_falla = f"Hola Julio, soy cliente y hablé con tu Asistente. Mi equipo tiene este problema: '{prompt}'"
                 link_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(resumen_falla)}"
                 st.markdown(f'<a href="{link_wa}" target="_blank" class="whatsapp-btn">📲 SOLICITAR PRESUPUESTO POR WHATSAPP</a>', unsafe_allow_html=True)
