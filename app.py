@@ -5,147 +5,117 @@ from PIL import Image
 import os
 
 # --- 1. CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(
-    page_title="Asistente - Electrónica Julio",
-    page_icon="🔧",
-    layout="centered", 
-    initial_sidebar_state="collapsed",
-)
+st.set_page_config(page_title="Asistente - Electrónica Julio", page_icon="🔧", layout="centered")
 
-LOGO_FILENAME = "logo_electronica_julio.png.jpg" 
-logo_image = None
-try:
-    if os.path.exists(LOGO_FILENAME):
-        logo_image = Image.open(LOGO_FILENAME)
-except Exception:
-    pass
-
-# --- 2. FUERZA BRUTA CSS (COLORES Y LEGIBILIDAD) ---
-custom_css = """
+# --- 2. CSS LIMPIO (Botón de WhatsApp y ocultar marcas de agua) ---
+st.markdown("""
 <style>
-    /* Fondo general oscuro */
-    .stApp, .stApp > header {
-        background-color: #1E1E1E !important;
-    }
-
-    /* --- BURBUJAS DE CHAT --- */
-    /* 1. Regla general para TODO el texto dentro de la burbuja (Forzar a BLANCO) */
-    [data-testid="stChatMessage"] * {
-        color: #FFFFFF !important; 
-        font-size: 16px !important;
-        font-weight: 500 !important;
-    }
-
-    /* 2. Fondo de la burbuja del Bot */
-    [data-testid="stChatMessage"] {
-        background-color: #333333 !important;
-        border-radius: 10px !important;
-        padding: 15px !important;
-        border-left: 4px solid #FFD700 !important;
-        margin-bottom: 15px !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
-    }
-
-    /* 3. Excepción para la burbuja del Usuario (Fondo Amarillo + Texto Negro) */
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
-        background-color: #FFD700 !important;
-        border-left: none !important;
-    }
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) * {
-        color: #000000 !important; 
-        font-weight: 600 !important;
-    }
-
-    /* --- CAJA DE TEXTO INFERIOR (INPUT) --- */
-    /* Fondo oscuro para la caja donde el usuario escribe */
-    [data-testid="stChatInput"] {
-        background-color: #333333 !important;
-        border: 1px solid #FFD700 !important;
-        border-radius: 15px !important;
-    }
-    [data-testid="stChatInput"] * {
-        color: #FFFFFF !important;
-    }
-    [data-testid="stChatInput"] textarea {
-        background-color: transparent !important;
-        color: #FFFFFF !important;
-    }
-    [data-testid="stChatInput"] textarea::placeholder {
-        color: #CCCCCC !important;
-    }
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
     
-    /* Ocultar menú de streamlit */
-    #MainMenu, footer, header {visibility: hidden;}
-
-    /* Botón de WhatsApp */
     .whatsapp-btn {
         display: block;
         width: 100%;
-        background-color: #FFD700;
-        color: #000000 !important;
+        background-color: #25D366;
+        color: white !important;
         text-align: center;
         padding: 15px;
         border-radius: 10px;
-        font-weight: bold;
-        font-size: 18px;
         text-decoration: none;
-        margin-top: 20px;
-        border: 2px solid #FFD700;
+        font-weight: bold;
+        margin-top: 15px;
+        margin-bottom: 20px;
+        transition: 0.3s;
+    }
+    .whatsapp-btn:hover {
+        background-color: #1DA851;
     }
 </style>
-"""
-st.markdown(custom_css, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# --- 3. RENDERIZADO DE CABECERA ---
-st.markdown("<br>", unsafe_allow_html=True) # Espacio
-col1, col2, col3 = st.columns([1,2,1])
+# --- 3. ESTÉTICA: LOGO CENTRADO Y SIN REDUNDANCIA ---
+# Usamos columnas para que el logo no ocupe toda la pantalla en el celular
+col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    if logo_image:
-        st.image(logo_image, use_container_width=True)
-st.markdown('<h2 style="text-align: center; color: #FFFFFF;">ELECTRÓNICA JULIO</h2>', unsafe_allow_html=True)
-st.markdown('<p style="text-align: center; color: #CCCCCC;">Asistente Inteligente de Triaje</p>', unsafe_allow_html=True)
+    # Asegúrate de que este nombre coincida con tu archivo en GitHub
+    LOGO_FILENAME = "logo_electronica_julio.png.jpg" 
+    try:
+        if os.path.exists(LOGO_FILENAME):
+            st.image(LOGO_FILENAME, use_container_width=True)
+        else:
+            st.markdown("<h3 style='text-align: center; color: #FFD700;'>ELECTRÓNICA JULIO</h3>", unsafe_allow_html=True)
+    except:
+        pass
+
+st.markdown("<p style='text-align: center; color: #888888; margin-top: -10px;'>Asistente Inteligente de Triaje (MVP)</p>", unsafe_allow_html=True)
 st.divider()
 
-# --- 4. IA Y CHAT ---
+# --- 4. CONFIGURACIÓN ROBUSTA DE IA ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
-    st.error("Falta API KEY.")
+    st.error("Falta la API Key en los secretos de Streamlit.")
     st.stop()
 
-SYSTEM_PROMPT = """Eres el asistente técnico de 'Electrónica Julio' en Tafí Viejo. 
-Saluda, pregunta qué equipo falla (TV, Audio, Refrigeración). Da 1 o 2 soluciones simples para hacer en casa. Si es grave, da un diagnóstico corto y dile que lo traiga al taller. NUNCA inventes precios."""
-model = genai.GenerativeModel('gemini-1.5-flash')
+SYSTEM_PROMPT = """Eres el asistente técnico inteligente de 'Electrónica Julio', un taller experto en reparación de electrónica de consumo en Tafí Viejo, Tucumán.
+Tu objetivo es guiar al usuario de forma empática a través de un triaje de problemas.
+Reglas:
+1. Recepción: Saluda amablemente y pregunta qué equipo le falla (Smart TV, Audio, Refrigeración). NO reparan celulares ni PC.
+2. Diagnóstico Nivel 1: Haz preguntas clave y sugiere 1-2 soluciones simples "en casa" (ej. "Asegúrate de que esté enchufado", "Limpia los filtros").
+3. Nivel 2 (Taller): Si la falla es de hardware, da un pre-diagnóstico corto y dile que debe traer el equipo al taller.
+4. No Inventar Precios: Tienes PROHIBIDO inventar precios. Di que el presupuesto se dará en el taller.
+5. Derivación: Cuando determines que necesita taller, dile: "Para coordinar, haz clic en el botón de abajo y envíale un WhatsApp a Julio con el resumen de tu falla."
+"""
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-    st.session_state.messages.append({"role": "assistant", "content": "¡Hola! Soy el Asistente de Electrónica Julio. 😊 Contame, ¿qué equipo te está dando problemas y qué le pasa?"})
+# Usamos gemini-1.5-flash con la instrucción de sistema nativa
+@st.cache_resource
+def load_model():
+    return genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        system_instruction=SYSTEM_PROMPT
+    )
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+model = load_model()
 
+# --- 5. LÓGICA DE CHAT NATIVA ---
+# Inicializamos la sesión de chat de Gemini (maneja el historial automáticamente)
+if "chat_session" not in st.session_state:
+    st.session_state.chat_session = model.start_chat(history=[])
+    # Guardamos solo un historial visual para la pantalla
+    st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Soy el Asistente Inteligente de Electrónica Julio. 😊 Contame, ¿qué equipo te está dando problemas (Smart TV, aire, audio, heladera...) y qué le pasa?"}]
+
+# Renderizar mensajes en pantalla
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+# Input del usuario
 if prompt := st.chat_input("Escribe tu consulta aquí..."):
-    st.chat_message("user").markdown(prompt)
+    with st.chat_message("user"):
+        st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    try:
-        full_conversation = [{"role": "user", "parts": [SYSTEM_PROMPT]}]
-        for m in st.session_state.messages:
-            role = "user" if m["role"] == "user" else "model"
-            full_conversation.append({"role": role, "parts": [m["content"]]})
+    # Respuesta de la IA
+    with st.chat_message("assistant"):
+        try:
+            # Enviar a la API usando la sesión (esto evita el error de conexión)
+            response = st.session_state.chat_session.send_message(prompt)
+            st.markdown(response.text)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
 
-        response = model.generate_content(full_conversation)
-        bot_response = response.text
+            # --- BOTÓN DE WHATSAPP ---
+            # Si la IA menciona llevarlo al taller, generamos el botón
+            palabras_clave = ["taller", "presupuesto", "coordinar", "revisar", "traer"]
+            if any(palabra in response.text.lower() for palabra in palabras_clave):
+                
+                # Número de Julio (Reemplazar)
+                NUMERO_WHATSAPP = "5493810000000" 
+                
+                resumen_falla = f"Hola Julio, soy cliente y hablé con tu Asistente. Mi equipo tiene este problema: '{prompt}'"
+                link_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(resumen_falla)}"
+                
+                st.markdown(f'<a href="{link_wa}" target="_blank" class="whatsapp-btn">📲 SOLICITAR PRESUPUESTO POR WHATSAPP</a>', unsafe_allow_html=True)
 
-        st.chat_message("assistant").markdown(bot_response)
-        st.session_state.messages.append({"role": "assistant", "content": bot_response})
-
-        if any(word in bot_response.lower() for word in ["taller", "presupuesto", "traer", "revisar", "julio"]):
-            JULIO_WA = "5493810000000" 
-            resumen = urllib.parse.quote("Hola Julio, necesito presupuesto para mi equipo. Hablé con tu asistente virtual.")
-            link = f"https://wa.me/{JULIO_WA}?text={resumen}"
-            st.markdown(f'<a href="{link}" target="_blank" class="whatsapp-btn">📲 ENVIAR WHATSAPP A JULIO</a>', unsafe_allow_html=True)
-
-    except Exception as e:
-        st.error("Error conectando con la IA.")
+        except Exception as e:
+            st.error(f"Ocurrió un error en la conexión. Por favor, intenta de nuevo. Detalle técnico: {e}")
