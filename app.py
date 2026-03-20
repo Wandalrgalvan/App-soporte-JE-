@@ -4,268 +4,148 @@ import urllib.parse
 from PIL import Image
 import os
 
-# --- 1. CONFIGURACIÓN DE PÁGINA (MOBILE-FIRST) ---
+# --- 1. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Asistente de Triaje - Electrónica Julio",
+    page_title="Asistente - Electrónica Julio",
     page_icon="🔧",
     layout="centered", 
     initial_sidebar_state="collapsed",
 )
 
-# --- 2. CARGA DEL LOGO (Verifica el nombre del archivo en GitHub) ---
-# Si tu logo se llama diferente, cambia "logo.jpg" por el nombre real.
 LOGO_FILENAME = "logo_electronica_julio.png.jpg" 
 logo_image = None
 try:
     if os.path.exists(LOGO_FILENAME):
         logo_image = Image.open(LOGO_FILENAME)
-    else:
-        st.warning(f"No se encuentra el archivo '{LOGO_FILENAME}'. El asistente funcionará sin logo.")
-except Exception as e:
-    st.error(f"Error al cargar el logo: {e}")
+except Exception:
+    pass
 
-
-# --- 3. INYECCIÓN DE CSS TOTAL (SALVANDO LA ESTÉTICA) ---
-# Esta sección es crítica. Hemos forzado colores, tipografía, cabecera fija y footer.
+# --- 2. FUERZA BRUTA CSS (COLORES Y LEGIBILIDAD) ---
 custom_css = """
 <style>
-    /* Fondo general gris carbón oscuro (#1E1E1E) */
-    .stApp {
+    /* Fondo general oscuro */
+    .stApp, .stApp > header {
         background-color: #1E1E1E !important;
-        color: #FFFFFF !important;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
-    /* Ocultar elementos nativos de Streamlit */
-    #MainMenu, footer, header {visibility: hidden;}
-    .stDeployButton {display:none;}
-
-    /* Contenedor de chat principal con padding para cabecera y footer */
-    [data-testid="stChatMessageContainer"] {
-        padding-top: 130px !important; /* Espacio para la cabecera fija */
-        padding-bottom: 110px !important; /* Espacio para el footer fijo */
+    /* --- BURBUJAS DE CHAT --- */
+    /* 1. Regla general para TODO el texto dentro de la burbuja (Forzar a BLANCO) */
+    [data-testid="stChatMessage"] * {
+        color: #FFFFFF !important; 
+        font-size: 16px !important;
+        font-weight: 500 !important;
     }
 
-    /* --- CABECERA FIJA --- */
-    .fixed-header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        background-color: #1E1E1E; /* Fondo oscuro */
-        z-index: 1000;
-        padding: 15px 0;
-        border-bottom: 2px solid #FFD700; /* Borde amarillo eléctrico */
-        text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    }
-    .logo-header {
-        max-width: 120px;
-        display: block;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    .title-header {
-        color: #FFFFFF;
-        font-size: 1.1rem;
-        font-weight: 500;
-        margin-top: 5px;
-        margin-bottom: 0;
-    }
-    .subtitle-header {
-        color: #CCCCCC;
-        font-size: 0.9rem;
-        margin-top: -3px;
-        margin-bottom: 10px;
-    }
-
-    /* --- ESTILO DE CHAT BUBBLES --- */
+    /* 2. Fondo de la burbuja del Bot */
     [data-testid="stChatMessage"] {
-        border-radius: 20px;
-        padding: 12px 16px;
-        margin-bottom: 12px;
-        font-family: inherit;
-        line-height: 1.4;
+        background-color: #333333 !important;
+        border-radius: 10px !important;
+        padding: 15px !important;
+        border-left: 4px solid #FFD700 !important;
+        margin-bottom: 15px !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important;
     }
 
-    /* Burbuja del Bot (Model - Gris Medio) */
-    [data-testid="chatAvatarIcon-assistant"] {
-        background-color: #333333;
-    }
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
-        background-color: #333333; /* Gris medio */
-        border-left: 3px solid #FFD700; /* Acento amarillo */
-        box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-    }
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) p {
-        color: #FFFFFF !important; /* TEXTO BLANCO PURO (arreglado) */
-        font-weight: 400;
-    }
-
-    /* Burbuja del Usuario (User - Amarillo Eléctrico) */
-    [data-testid="chatAvatarIcon-user"] {
-        background-color: #FFD700;
-        color: #000000;
-    }
+    /* 3. Excepción para la burbuja del Usuario (Fondo Amarillo + Texto Negro) */
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
-        background-color: #FFD700; /* Amarillo eléctrico */
-        border-right: 3px solid #FFFFFF; /* Acento blanco */
-        box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+        background-color: #FFD700 !important;
+        border-left: none !important;
     }
-    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) p {
-        color: #000000 !important; /* TEXTO NEGRO PURO (arreglado) */
-        font-weight: 500;
+    [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) * {
+        color: #000000 !important; 
+        font-weight: 600 !important;
     }
 
-    /* --- FOOTER FIJO (INPUT CHAT) --- */
-    .fixed-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: #1E1E1E;
-        z-index: 1000;
-        padding: 15px 0;
-        border-top: 1px solid #333333;
-        box-shadow: 0 -4px 6px rgba(0,0,0,0.3);
-    }
-    /* Estilo para el input de chat nativo */
-    .stChatInputContainer {
-        border-radius: 25px !important;
-        border: 1px solid #333333 !important;
+    /* --- CAJA DE TEXTO INFERIOR (INPUT) --- */
+    /* Fondo oscuro para la caja donde el usuario escribe */
+    [data-testid="stChatInput"] {
         background-color: #333333 !important;
+        border: 1px solid #FFD700 !important;
+        border-radius: 15px !important;
     }
-    .stChatInputContainer textarea {
+    [data-testid="stChatInput"] * {
         color: #FFFFFF !important;
-        background-color: #333333 !important;
-        font-size: 1rem;
     }
+    [data-testid="stChatInput"] textarea {
+        background-color: transparent !important;
+        color: #FFFFFF !important;
+    }
+    [data-testid="stChatInput"] textarea::placeholder {
+        color: #CCCCCC !important;
+    }
+    
+    /* Ocultar menú de streamlit */
+    #MainMenu, footer, header {visibility: hidden;}
 
-    /* --- BOTÓN DE WHATSAPP --- */
-    .whatsapp-btn-fixed {
+    /* Botón de WhatsApp */
+    .whatsapp-btn {
         display: block;
-        width: calc(100% - 30px);
-        background-color: #FFD700; /* Amarillo Eléctrico */
+        width: 100%;
+        background-color: #FFD700;
         color: #000000 !important;
         text-align: center;
-        padding: 18px;
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 1.1rem;
+        padding: 15px;
+        border-radius: 10px;
+        font-weight: bold;
+        font-size: 18px;
         text-decoration: none;
-        margin: 15px auto;
+        margin-top: 20px;
         border: 2px solid #FFD700;
-        transition: 0.3s;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    }
-    .whatsapp-btn-fixed:hover {
-        background-color: transparent;
-        color: #FFD700 !important;
     }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
+# --- 3. RENDERIZADO DE CABECERA ---
+st.markdown("<br>", unsafe_allow_html=True) # Espacio
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    if logo_image:
+        st.image(logo_image, use_container_width=True)
+st.markdown('<h2 style="text-align: center; color: #FFFFFF;">ELECTRÓNICA JULIO</h2>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #CCCCCC;">Asistente Inteligente de Triaje</p>', unsafe_allow_html=True)
+st.divider()
 
-# --- 4. RENDERIZADO DE CABECERA FIJA ---
-st.markdown('<div class="fixed-header">', unsafe_allow_html=True)
-if logo_image:
-    st.image(logo_image, width=120)
-st.markdown('<p class="title-header">ELECTRÓNICA JULIO</p>', unsafe_allow_html=True)
-st.markdown('<p class="subtitle-header">Asistente Inteligente de Triaje (MVP)</p>', unsafe_allow_html=True)
-st.markdown('</div>', unsafe_allow_html=True)
-
-
-# --- 5. CONFIGURACIÓN DE IA (GEMINI API) ---
-# Intenta obtener la API KEY desde los secretos de Streamlit
+# --- 4. IA Y CHAT ---
 try:
-    api_key = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
-    st.error("No se encontró la clave API 'GEMINI_API_KEY'. Configúrala en el panel de control de Streamlit Cloud (Advanced -> Secrets).")
-    st.stop() 
+    st.error("Falta API KEY.")
+    st.stop()
 
-# --- SYSTEM PROMPT ESTRICTO (LA PERSONALIDAD DEL BOT) ---
-SYSTEM_PROMPT = """Eres el asistente técnico inteligente de 'Electrónica Julio', un taller experto en reparación de electrónica de consumo en Tafí Viejo, Tucumán.
-Tu objetivo es guiar al usuario de forma empática a través de un triaje de problemas.
-Sigue estrictamente estas reglas:
-1. **Recepción:** Comienza saludando amablemente (ej. "¡Hola! ¿En qué te puedo ayudar hoy?") y pregúntale qué equipo le está fallando (Smart TV, Audio, Refrigeración, etc.).
-2. **Diagnóstico Nivel 1:** Haz preguntas clave y sugiere 1-2 soluciones simples "en casa" que no requieran conocimientos técnicos profundos (ej. "Asegúrate de que esté enchufado", "Intenta reiniciar el equipo", "Limpia los filtros del aire").
-3. **Nivel 2 (Taller):** Si las soluciones de Nivel 1 no funcionan o si la falla es claramente de hardware (ej. pantalla rota, no enciende en absoluto, humo), proporciona un pre-diagnóstico corto y directo (ej. "Podría ser un problema en la fuente de alimentación") y dile que debe traer el equipo al taller.
-4. **No Inventar Precios:** Tienes terminantemente PROHIBIDO inventar precios o presupuestos. Siempre di que el presupuesto se dará en el taller tras la revisión.
-5. **Derivación a WhatsApp:** Cuando determines que se necesita una visita al taller, dile al usuario: "Para coordinar, haz clic en el botón de abajo y envíale un WhatsApp a Julio con el resumen de la falla. Él te responderá pronto."
-"""
+SYSTEM_PROMPT = """Eres el asistente técnico de 'Electrónica Julio' en Tafí Viejo. 
+Saluda, pregunta qué equipo falla (TV, Audio, Refrigeración). Da 1 o 2 soluciones simples para hacer en casa. Si es grave, da un diagnóstico corto y dile que lo traiga al taller. NUNCA inventes precios."""
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-# Configuración del modelo Gemini Pro
-model = genai.GenerativeModel('gemini-pro')
-
-
-# --- 6. MANEJO DEL CHAT Y ESTADO DE SESIÓN ---
-# Inicializar el historial de chat si no existe
 if "messages" not in st.session_state:
     st.session_state.messages = []
-    # Mensaje de bienvenida inicial del bot (Asegúrate de que sea claro)
-    initial_bot_message = "¡Hola! Soy el Asistente Inteligente de Electrónica Julio. 😊 Contame, ¿qué equipo te está dando problemas (Smart TV, aire, audio, heladera...) y qué le pasa?"
-    st.session_state.messages.append({"role": "assistant", "content": initial_bot_message})
+    st.session_state.messages.append({"role": "assistant", "content": "¡Hola! Soy el Asistente de Electrónica Julio. 😊 Contame, ¿qué equipo te está dando problemas y qué le pasa?"})
 
-# Mostrar mensajes de chat del historial (con el CSS personalizado aplicado)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+if prompt := st.chat_input("Escribe tu consulta aquí..."):
+    st.chat_message("user").markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
-# --- 7. FOOTER FIJO (LÓGICA DE INPUT DEL USUARIO Y RESPUESTA DE LA IA) ---
-# Contenedor de footer fijo para el input de chat
-st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
-# Usar st.container() dentro de st.columns() para que el chat_input se estire
-input_cols = st.columns([0.05, 0.9, 0.05])
-with input_cols[1]:
-    if prompt := st.chat_input("Escribe tu consulta aquí..."):
-        # Mostrar mensaje del usuario inmediatamente
-        st.chat_message("user").markdown(prompt)
-        # Agregar mensaje del usuario al historial
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    try:
+        full_conversation = [{"role": "user", "parts": [SYSTEM_PROMPT]}]
+        for m in st.session_state.messages:
+            role = "user" if m["role"] == "user" else "model"
+            full_conversation.append({"role": role, "parts": [m["content"]]})
 
-        # Generar respuesta de la IA (incluyendo el historial y el system prompt)
-        try:
-            # Combinar System Prompt y el historial de mensajes para el modelo
-            full_conversation = [{"role": "user", "parts": [SYSTEM_PROMPT]}]
-            for m in st.session_state.messages:
-                if m["role"] == "user":
-                    full_conversation.append({"role": "user", "parts": [m["content"]]})
-                else:
-                    full_conversation.append({"role": "model", "parts": [m["content"]]})
+        response = model.generate_content(full_conversation)
+        bot_response = response.text
 
-            # Llamada a la API de Gemini
-            response = model.generate_content(full_conversation)
-            bot_response = response.text
+        st.chat_message("assistant").markdown(bot_response)
+        st.session_state.messages.append({"role": "assistant", "content": bot_response})
 
-            # Mostrar respuesta del bot
-            st.chat_message("assistant").markdown(bot_response)
-            # Agregar respuesta del bot al historial
-            st.session_state.messages.append({"role": "assistant", "content": bot_response})
+        if any(word in bot_response.lower() for word in ["taller", "presupuesto", "traer", "revisar", "julio"]):
+            JULIO_WA = "5493810000000" 
+            resumen = urllib.parse.quote("Hola Julio, necesito presupuesto para mi equipo. Hablé con tu asistente virtual.")
+            link = f"https://wa.me/{JULIO_WA}?text={resumen}"
+            st.markdown(f'<a href="{link}" target="_blank" class="whatsapp-btn">📲 ENVIAR WHATSAPP A JULIO</a>', unsafe_allow_html=True)
 
-
-            # --- 8. LÓGICA DEL BOTÓN DE WHATSAPP ---
-            if any(keyword in bot_response.lower() for keyword in ["traer el equipo", "visita al taller", "presupuesto se dará", "coordinar"]):
-                # Generar resumen de la falla para el mensaje de WhatsApp
-                summary_prompt = f"Resume brevemente el problema técnico del usuario para un técnico: \n\n{full_conversation}"
-                try:
-                    summary_response = model.generate_content([{"role": "user", "parts": [summary_prompt]}])
-                    fault_summary = summary_response.text.strip()
-                except Exception:
-                    fault_summary = "Consulta técnica de triaje."
-
-                # Enlace de WhatsApp codificado
-                JULIO_WHATSAPP_NUMBER = "5493810000000" 
-                wa_message = f"Hola Julio, soy cliente y hablé con tu Asistente. Mi equipo tiene un problema. Resumen:\n\n{fault_summary}"
-                encoded_wa_message = urllib.parse.quote(wa_message)
-                wa_link = f"https://wa.me/{JULIO_WHATSAPP_NUMBER}?text={encoded_wa_message}"
-
-                # Mostrar el botón de WhatsApp (con el CSS personalizado aplicado)
-                st.markdown(f'<a href="{wa_link}" target="_blank" class="whatsapp-btn-fixed">📲 SOLICITAR PRESUPUESTO POR WHATSAPP</a>', unsafe_allow_html=True)
-            # --- FIN LÓGICA DEL BOTÓN DE WHATSAPP ---
-
-        except Exception as e:
-            st.error(f"Error en la IA. Detalle: {e}")
-st.markdown('</div>', unsafe_allow_html=True) # Cierra el footer fijo
+    except Exception as e:
+        st.error("Error conectando con la IA.")
