@@ -7,7 +7,7 @@ import os
 # --- 1. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Asistente - Electrónica Julio", page_icon="🔧", layout="centered")
 
-# --- 2. CSS LIMPIO (Botón de WhatsApp y ocultar marcas de agua) ---
+# --- 2. CSS LIMPIO (Diseño Oscuro Nativo) ---
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;}
@@ -34,11 +34,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. ESTÉTICA: LOGO CENTRADO Y SIN REDUNDANCIA ---
-# Usamos columnas para que el logo no ocupe toda la pantalla en el celular
+# --- 3. ESTÉTICA: LOGO CENTRADO ---
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    # Asegúrate de que este nombre coincida con tu archivo en GitHub
     LOGO_FILENAME = "logo_electronica_julio.png.jpg" 
     try:
         if os.path.exists(LOGO_FILENAME):
@@ -51,7 +49,7 @@ with col2:
 st.markdown("<p style='text-align: center; color: #888888; margin-top: -10px;'>Asistente Inteligente de Triaje (MVP)</p>", unsafe_allow_html=True)
 st.divider()
 
-# --- 4. CONFIGURACIÓN ROBUSTA DE IA ---
+# --- 4. CONFIGURACIÓN DE IA (MÉTODO INFALIBLE) ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
@@ -68,24 +66,14 @@ Reglas:
 5. Derivación: Cuando determines que necesita taller, dile: "Para coordinar, haz clic en el botón de abajo y envíale un WhatsApp a Julio con el resumen de tu falla."
 """
 
-# Usamos gemini-1.5-flash con la instrucción de sistema nativa
-@st.cache_resource
-def load_model():
-    return genai.GenerativeModel(
-        model_name="gemini-1.5-flash-latest",
-        system_instruction=SYSTEM_PROMPT
-    )
+# Usamos gemini-pro que es 100% estable en todas las regiones y versiones
+model = genai.GenerativeModel('gemini-pro')
 
-model = load_model()
-
-# --- 5. LÓGICA DE CHAT NATIVA ---
-# Inicializamos la sesión de chat de Gemini (maneja el historial automáticamente)
-if "chat_session" not in st.session_state:
-    st.session_state.chat_session = model.start_chat(history=[])
-    # Guardamos solo un historial visual para la pantalla
+# --- 5. LÓGICA DE CHAT MANUAL (A prueba de errores) ---
+if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Soy el Asistente Inteligente de Electrónica Julio. 😊 Contame, ¿qué equipo te está dando problemas (Smart TV, aire, audio, heladera...) y qué le pasa?"}]
 
-# Renderizar mensajes en pantalla
+# Renderizar mensajes visuales
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
@@ -96,26 +84,32 @@ if prompt := st.chat_input("Escribe tu consulta aquí..."):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
+    # Preparar el historial estrictamente alternado para engañar a la API y que no falle
+    gemini_history = [
+        {"role": "user", "parts": [SYSTEM_PROMPT]},
+        {"role": "model", "parts": ["Entendido. Actuaré estrictamente bajo estas reglas como el asistente de Julio."]}
+    ]
+    
+    # Añadir la conversación real
+    for msg in st.session_state.messages:
+        role = "model" if msg["role"] == "assistant" else "user"
+        gemini_history.append({"role": role, "parts": [msg["content"]]})
+
     # Respuesta de la IA
     with st.chat_message("assistant"):
         try:
-            # Enviar a la API usando la sesión (esto evita el error de conexión)
-            response = st.session_state.chat_session.send_message(prompt)
+            # Enviamos el paquete completo
+            response = model.generate_content(gemini_history)
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
 
-            # --- BOTÓN DE WHATSAPP ---
-            # Si la IA menciona llevarlo al taller, generamos el botón
+            # --- BOTÓN DE WHATSAPP DINÁMICO ---
             palabras_clave = ["taller", "presupuesto", "coordinar", "revisar", "traer"]
             if any(palabra in response.text.lower() for palabra in palabras_clave):
-                
-                # Número de Julio (Reemplazar)
-                NUMERO_WHATSAPP = "5493810000000" 
-                
+                NUMERO_WHATSAPP = "5493810000000" # <-- ¡Recuerda poner el número real aquí!
                 resumen_falla = f"Hola Julio, soy cliente y hablé con tu Asistente. Mi equipo tiene este problema: '{prompt}'"
                 link_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(resumen_falla)}"
-                
                 st.markdown(f'<a href="{link_wa}" target="_blank" class="whatsapp-btn">📲 SOLICITAR PRESUPUESTO POR WHATSAPP</a>', unsafe_allow_html=True)
 
         except Exception as e:
-            st.error(f"Ocurrió un error en la conexión. Por favor, intenta de nuevo. Detalle técnico: {e}")
+            st.error(f"Error de conexión. Detalle técnico: {e}")
