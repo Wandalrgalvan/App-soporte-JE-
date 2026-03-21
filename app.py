@@ -68,9 +68,18 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. ESTÉTICA: CABECERA NEUTRAL (Sin Logo) ---
-st.markdown("<h3 style='text-align: center; color: #FFD700; margin-top: 20px;'>SOPORTE TÉCNICO VIRTUAL</h3>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #888888; margin-top: -10px;'>Asistente de diagnóstico rápido</p>", unsafe_allow_html=True)
+# --- 3. ESTÉTICA: CABECERA NEUTRAL CON ICONO SVG ---
+# Insertamos un icono estilizado de herramientas y engranajes en amarillo eléctrico (#FFD700)
+st.markdown("""
+<div style="text-align: center; margin-top: 20px; color: #FFD700;">
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4zM10.2 10.2l-1.4 1.4c-.6.6-1.5.6-2.1 0l-1.4-1.4c-.6-.6-.6-1.5 0-2.1l1.4-1.4c.6-.6 1.5-.6 2.1 0l1.4 1.4c.7.6.7 1.5 0 2.1z"/>
+        <path d="M19.5 7.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" opacity=".5"/>
+    </svg>
+    <h3 style='color: #FFD700; margin-top: 10px; margin-bottom: 0px; font-weight: 700;'>SOPORTE TÉCNICO VIRTUAL</h3>
+    <p style='color: #888888; margin-top: 0px;'>Asistente de diagnóstico rápido</p>
+</div>
+""", unsafe_allow_html=True)
 st.divider()
 
 # --- 4. CONFIGURACIÓN DE IA (Búsqueda Dinámica Anti-Errores) ---
@@ -80,7 +89,7 @@ except KeyError:
     st.error("Falta la API Key en los secretos de Streamlit.")
     st.stop()
 
-# EL NUEVO CEREBRO: Secuencial y sutil
+# EL CEREBRO ACTUALIZADO (Psicología Inbound: Una pregunta a la vez)
 SYSTEM_PROMPT = """Eres un técnico reparador experto, paciente y muy amable. Tu objetivo es ayudar genuinamente al usuario a resolver problemas con sus equipos electrónicos (Smart TV, Audio, Refrigeración) como si estuvieras chateando con un amigo.
 Reglas ESTRICTAS de comportamiento:
 1. PASO A PASO (CRÍTICO): NUNCA des una lista larga de instrucciones. Haz UNA sola pregunta o sugiere UNA sola prueba a la vez, y ESPERA la respuesta del usuario.
@@ -115,7 +124,6 @@ model = genai.GenerativeModel(nombre_modelo_real)
 
 # --- 5. LÓGICA DE CHAT SECUENCIAL ---
 if "messages" not in st.session_state:
-    # Saludo mucho más natural y que invita a una sola respuesta
     st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Soy tu asistente técnico virtual. 😊 Contame, ¿con qué equipo estás teniendo problemas hoy?"}]
 
 for msg in st.session_state.messages:
@@ -142,9 +150,9 @@ if prompt := st.chat_input("Escribe tu respuesta aquí..."):
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
 
-            # --- BOTÓN DE WHATSAPP (Aparece solo cuando el bot menciona a Julio) ---
+            # --- BOTÓN DE WHATSAPP DINÁMICO ---
             if "julio" in response.text.lower() or "botón de abajo" in response.text.lower():
-                NUMERO_WHATSAPP = "5493810000000" # <-- Reemplazar por el real
+                NUMERO_WHATSAPP = "5493810000000" # <-- Poner el número real aquí
                 resumen_falla = f"Hola Julio, el Asistente Virtual me sugirió contactarte. Tengo un equipo con esta falla: '{prompt}'"
                 link_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(resumen_falla)}"
                 st.markdown(f'<a href="{link_wa}" target="_blank" class="whatsapp-btn">📲 CONTACTAR A JULIO (TÉCNICO)</a>', unsafe_allow_html=True)
