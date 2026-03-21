@@ -1,13 +1,12 @@
 import streamlit as st
 import google.generativeai as genai
 import urllib.parse
-from PIL import Image
 import os
 
 # --- 1. CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Asistente - Electrónica Julio", page_icon="🔧", layout="centered")
+st.set_page_config(page_title="Soporte Técnico Virtual", page_icon="🔧", layout="centered")
 
-# --- 2. CSS LIMPIO (Diseño Oscuro Nativo) ---
+# --- 2. CSS LIMPIO Y FOOTER (Diseño Oscuro Nativo) ---
 st.markdown("""
 <style>
     #MainMenu {visibility: hidden;}
@@ -31,87 +30,67 @@ st.markdown("""
     .whatsapp-btn:hover {
         background-color: #1DA851;
     }
-    /* --- FOOTER FIJO Y ELEGANTE (INPUT DE CHAT) --- */
-    
-    /* 1. Dale espacio al chat para que el texto no quede tapado por la caja de abajo */
+
+    /* Footer fijo y elegante */
     [data-testid="stChatMessageContainer"] {
         padding-bottom: 100px !important; 
     }
-
-    /* 2. Pinta toda la franja inferior (el fondo del footer) de gris oscuro carbón */
     [data-testid="stBottom"] > div {
         background-color: #1E1E1E !important;
         border-top: 1px solid #333333;
         padding-top: 15px;
         padding-bottom: 15px;
+        margin-bottom: 25px !important;
     }
-
-    /* 3. Haz que la caja de texto sea redondeada, con borde sutil y fondo gris medio */
     .stChatInputContainer {
         border-radius: 25px !important;
         border: 1px solid #333333 !important;
         background-color: #333333 !important;
     }
-    
-    /* 4. Asegura que el texto que escriba el usuario ahí adentro sea blanco */
     .stChatInputContainer textarea {
         color: #FFFFFF !important;
         background-color: #333333 !important;
         font-size: 1rem;
     }
-    /* --- COPYRIGHT FOOTER (Electrónica Julio 2026) --- */
+    
+    /* Copyright neutral */
     .copyright {
         position: fixed;
         bottom: 5px;
         left: 0;
         width: 100%;
         text-align: center;
-        color: #666666; /* Gris sutil para que no distraiga */
+        color: #666666;
         font-size: 0.75rem;
         z-index: 1000;
         font-family: sans-serif;
     }
-    
-    /* Subimos un poquito el input del chat para que no aplaste el texto */
-    [data-testid="stBottom"] {
-        margin-bottom: 25px !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. ESTÉTICA: LOGO CENTRADO ---
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    LOGO_FILENAME = "logo_electronica_julio.png.jpg" 
-    try:
-        if os.path.exists(LOGO_FILENAME):
-            st.image(LOGO_FILENAME, use_container_width=True)
-        else:
-            st.markdown("<h3 style='text-align: center; color: #FFD700;'>ELECTRÓNICA JULIO</h3>", unsafe_allow_html=True)
-    except:
-        pass
-
-st.markdown("<p style='text-align: center; color: #888888; margin-top: -10px;'>Asistente Inteligente de Triaje (MVP)</p>", unsafe_allow_html=True)
+# --- 3. ESTÉTICA: CABECERA NEUTRAL (Sin Logo) ---
+st.markdown("<h3 style='text-align: center; color: #FFD700; margin-top: 20px;'>SOPORTE TÉCNICO VIRTUAL</h3>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888888; margin-top: -10px;'>Asistente de diagnóstico rápido</p>", unsafe_allow_html=True)
 st.divider()
 
-# --- 4. CONFIGURACIÓN DE IA (BÚSQUEDA DINÁMICA A PRUEBA DE ERRORES) ---
+# --- 4. CONFIGURACIÓN DE IA (Búsqueda Dinámica Anti-Errores) ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
     st.error("Falta la API Key en los secretos de Streamlit.")
     st.stop()
 
-SYSTEM_PROMPT = """Eres el asistente técnico inteligente de 'Electrónica Julio', un taller experto en reparación de electrónica de consumo en Tafí Viejo, Tucumán.
-Tu objetivo es guiar al usuario de forma empática a través de un triaje de problemas.
-Reglas:
-1. Recepción: Saluda amablemente y pregunta qué equipo le falla (Smart TV, Audio, Refrigeración). NO reparan celulares ni PC.
-2. Diagnóstico Nivel 1: Haz preguntas clave y sugiere 1-2 soluciones simples "en casa" (ej. "Asegúrate de que esté enchufado", "Limpia los filtros").
-3. Nivel 2 (Taller): Si la falla es de hardware, da un pre-diagnóstico corto y dile que debe traer el equipo al taller.
-4. No Inventar Precios: Tienes PROHIBIDO inventar precios. Di que el presupuesto se dará en el taller.
-5. Derivación: Cuando determines que necesita taller, dile: "Para coordinar, haz clic en el botón de abajo y envíale un WhatsApp a Julio con el resumen de tu falla."
+# EL NUEVO CEREBRO: Secuencial y sutil
+SYSTEM_PROMPT = """Eres un técnico reparador experto, paciente y muy amable. Tu objetivo es ayudar genuinamente al usuario a resolver problemas con sus equipos electrónicos (Smart TV, Audio, Refrigeración) como si estuvieras chateando con un amigo.
+Reglas ESTRICTAS de comportamiento:
+1. PASO A PASO (CRÍTICO): NUNCA des una lista larga de instrucciones. Haz UNA sola pregunta o sugiere UNA sola prueba a la vez, y ESPERA la respuesta del usuario.
+2. Tono Humano: Tus respuestas deben ser cortas, naturales y conversacionales. No suenes como un manual de instrucciones de IA.
+3. Diagnóstico Nivel 1: Intenta 1 o 2 soluciones simples "en casa" (revisar enchufes, limpiar filtros, reiniciar de fábrica). 
+4. La Derivación (La Venta Suave): SÓLO si las pruebas básicas fallan o es evidente que hay daño de hardware (pantalla rota, no enciende nada, olor a quemado), dile que necesita revisión técnica por un profesional. Ahí, ofrécele el contacto de un taller. 
+Dile exactamente esto: "Para ese problema ya vas a necesitar que un técnico lo abra y lo revise bien. Si querés, te puedo facilitar el contacto de Julio, que es un técnico de mucha confianza en Tafí Viejo. Podés escribirle tocando el botón de abajo."
+5. Cero promesas: No inventes precios ni tiempos de reparación.
 """
 
-# Función que busca el mejor modelo disponible en tu API Key en tiempo real
 @st.cache_resource
 def get_best_model():
     modelos_disponibles = []
@@ -119,40 +98,38 @@ def get_best_model():
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
                 if 'flash' in m.name.lower():
-                    return m.name # Priorizamos la versión más rápida (Flash)
+                    return m.name
                 modelos_disponibles.append(m.name)
-        
-        # Si no encuentra Flash, usa el primero de texto que funcione
         if modelos_disponibles:
             return modelos_disponibles[0]
-    except Exception as e:
+    except Exception:
         return None
 
 nombre_modelo_real = get_best_model()
 
 if not nombre_modelo_real:
-    st.error("Tu API Key actual no tiene acceso a los modelos de texto. Revisa tu cuenta en Google AI Studio.")
+    st.error("Error con la API Key. Revisa tu cuenta en Google AI Studio.")
     st.stop()
 
-# Iniciamos el modelo con el nombre exacto que Google aprobó
 model = genai.GenerativeModel(nombre_modelo_real)
 
-# --- 5. LÓGICA DE CHAT MANUAL ---
+# --- 5. LÓGICA DE CHAT SECUENCIAL ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Soy el Asistente Inteligente de Electrónica Julio. 😊 Contame, ¿qué equipo te está dando problemas (Smart TV, aire, audio, heladera...) y qué le pasa?"}]
+    # Saludo mucho más natural y que invita a una sola respuesta
+    st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Soy tu asistente técnico virtual. 😊 Contame, ¿con qué equipo estás teniendo problemas hoy?"}]
 
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-if prompt := st.chat_input("Escribe tu consulta aquí..."):
+if prompt := st.chat_input("Escribe tu respuesta aquí..."):
     with st.chat_message("user"):
         st.markdown(prompt)
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     gemini_history = [
         {"role": "user", "parts": [SYSTEM_PROMPT]},
-        {"role": "model", "parts": ["Entendido. Actuaré estrictamente bajo estas reglas como el asistente de Julio."]}
+        {"role": "model", "parts": ["Entendido. Seré súper conversacional, haré una pregunta a la vez y solo recomendaré a Julio si es estrictamente necesario ir a un taller."]}
     ]
     
     for msg in st.session_state.messages:
@@ -165,13 +142,15 @@ if prompt := st.chat_input("Escribe tu consulta aquí..."):
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
 
-            # --- BOTÓN DE WHATSAPP ---
-            palabras_clave = ["taller", "presupuesto", "coordinar", "revisar", "traer"]
-            if any(palabra in response.text.lower() for palabra in palabras_clave):
-                NUMERO_WHATSAPP = "5493810000000" # <-- Reemplazar por el de Julio
-                resumen_falla = f"Hola Julio, soy cliente y hablé con tu Asistente. Mi equipo tiene este problema: '{prompt}'"
+            # --- BOTÓN DE WHATSAPP (Aparece solo cuando el bot menciona a Julio) ---
+            if "julio" in response.text.lower() or "botón de abajo" in response.text.lower():
+                NUMERO_WHATSAPP = "5493810000000" # <-- Reemplazar por el real
+                resumen_falla = f"Hola Julio, el Asistente Virtual me sugirió contactarte. Tengo un equipo con esta falla: '{prompt}'"
                 link_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(resumen_falla)}"
-                st.markdown(f'<a href="{link_wa}" target="_blank" class="whatsapp-btn">📲 SOLICITAR PRESUPUESTO POR WHATSAPP</a>', unsafe_allow_html=True)
+                st.markdown(f'<a href="{link_wa}" target="_blank" class="whatsapp-btn">📲 CONTACTAR A JULIO (TÉCNICO)</a>', unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"Error de conexión. Detalle técnico: {e}")
+
+# Footer de Copyright
+st.markdown('<div class="copyright">© 2026 Soporte Técnico Virtual</div>', unsafe_allow_html=True)
