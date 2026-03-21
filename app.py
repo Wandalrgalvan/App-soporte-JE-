@@ -31,7 +31,6 @@ st.markdown("""
         background-color: #1DA851;
     }
 
-    /* Footer fijo y elegante */
     [data-testid="stChatMessageContainer"] {
         padding-bottom: 100px !important; 
     }
@@ -53,7 +52,6 @@ st.markdown("""
         font-size: 1rem;
     }
     
-    /* Copyright neutral */
     .copyright {
         position: fixed;
         bottom: 5px;
@@ -69,7 +67,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 3. ESTÉTICA: CABECERA NEUTRAL CON ICONO SVG ---
-# Insertamos un icono estilizado de herramientas y engranajes en amarillo eléctrico (#FFD700)
 st.markdown("""
 <div style="text-align: center; margin-top: 20px; color: #FFD700;">
     <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -77,27 +74,29 @@ st.markdown("""
         <path d="M19.5 7.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" opacity=".5"/>
     </svg>
     <h3 style='color: #FFD700; margin-top: 10px; margin-bottom: 0px; font-weight: 700;'>SOPORTE TÉCNICO VIRTUAL</h3>
-    <p style='color: #888888; margin-top: 0px;'>Asistente de diagnóstico rápido</p>
+    <p style='color: #888888; margin-top: 0px;'>Asistente de diagnóstico paso a paso</p>
 </div>
 """, unsafe_allow_html=True)
 st.divider()
 
-# --- 4. CONFIGURACIÓN DE IA (Búsqueda Dinámica Anti-Errores) ---
+# --- 4. CONFIGURACIÓN DE IA ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
     st.error("Falta la API Key en los secretos de Streamlit.")
     st.stop()
 
-# EL CEREBRO ACTUALIZADO (Psicología Inbound: Una pregunta a la vez)
-SYSTEM_PROMPT = """Eres un técnico reparador experto, paciente y muy amable. Tu objetivo es ayudar genuinamente al usuario a resolver problemas con sus equipos electrónicos (Smart TV, Audio, Refrigeración) como si estuvieras chateando con un amigo.
+# EL CEREBRO ACTUALIZADO: Paciencia extrema y derivación como último recurso
+SYSTEM_PROMPT = """Eres un técnico reparador experto, paciente y muy amable. Tu objetivo es ayudar genuinamente al usuario a resolver problemas con CUALQUIER equipo electrónico (celulares, computadoras, Smart TV, Audio, Refrigeración, etc.) como si estuvieras chateando con un amigo.
 Reglas ESTRICTAS de comportamiento:
-1. PASO A PASO (CRÍTICO): NUNCA des una lista larga de instrucciones. Haz UNA sola pregunta o sugiere UNA sola prueba a la vez, y ESPERA la respuesta del usuario.
-2. Tono Humano: Tus respuestas deben ser cortas, naturales y conversacionales. No suenes como un manual de instrucciones de IA.
-3. Diagnóstico Nivel 1: Intenta 1 o 2 soluciones simples "en casa" (revisar enchufes, limpiar filtros, reiniciar de fábrica). 
-4. La Derivación (La Venta Suave): SÓLO si las pruebas básicas fallan o es evidente que hay daño de hardware (pantalla rota, no enciende nada, olor a quemado), dile que necesita revisión técnica por un profesional. Ahí, ofrécele el contacto de un taller. 
-Dile exactamente esto: "Para ese problema ya vas a necesitar que un técnico lo abra y lo revise bien. Si querés, te puedo facilitar el contacto de Julio, que es un técnico de mucha confianza en Tafí Viejo. Podés escribirle tocando el botón de abajo."
-5. Cero promesas: No inventes precios ni tiempos de reparación.
+1. PASO A PASO (CRÍTICO): NUNCA des una lista larga de instrucciones. Haz UNA sola pregunta o sugiere UNA sola prueba a la vez, y ESPERA la respuesta.
+2. Soporte Exhaustivo: Acompaña al usuario pacientemente. Si una prueba no funciona, sugiere otra alternativa (revisar cables, reiniciar, limpiar filtros, ver configuraciones). Tu objetivo es AGOTAR TODAS las opciones posibles de solución "en casa" antes de rendirte.
+3. La Derivación (ÚLTIMO RECURSO): SÓLO debes derivar al taller de Julio cuando se cumplan estas DOS condiciones:
+   A) El usuario confirma que ya intentó todas tus sugerencias y el equipo sigue sin funcionar.
+   B) El equipo es un Smart TV, equipo de Audio o Refrigeración (Julio no arregla celulares ni PCs).
+4. Mensaje de Derivación: Cuando ya no queden opciones y aplique la derivación, dile exactamente esto: "Ya intentamos todo lo posible en casa y parece ser una falla interna. Para este problema vas a necesitar que un técnico lo abra y lo revise bien. Te facilito el contacto de Julio, un técnico de confianza en Tafí Viejo. Podés escribirle tocando el botón de abajo."
+5. Límite con otros equipos: Si es un celular o PC que definitivamente no tiene arreglo en casa, dile amablemente que requiere un servicio técnico especializado en ese rubro, pero NO ofrezcas a Julio ni el botón.
+6. Cero promesas: No inventes precios ni tiempos de reparación.
 """
 
 @st.cache_resource
@@ -122,7 +121,7 @@ if not nombre_modelo_real:
 
 model = genai.GenerativeModel(nombre_modelo_real)
 
-# --- 5. LÓGICA DE CHAT SECUENCIAL ---
+# --- 5. LÓGICA DE CHAT ---
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Soy tu asistente técnico virtual. 😊 Contame, ¿con qué equipo estás teniendo problemas hoy?"}]
 
@@ -137,7 +136,7 @@ if prompt := st.chat_input("Escribe tu respuesta aquí..."):
 
     gemini_history = [
         {"role": "user", "parts": [SYSTEM_PROMPT]},
-        {"role": "model", "parts": ["Entendido. Seré súper conversacional, haré una pregunta a la vez y solo recomendaré a Julio si es estrictamente necesario ir a un taller."]}
+        {"role": "model", "parts": ["Entendido. Guiaré al usuario paso a paso, agotaré todas las opciones posibles primero, y solo ofreceré el contacto de Julio como último recurso absoluto si es un TV, Audio o Refrigeración."]}
     ]
     
     for msg in st.session_state.messages:
@@ -150,15 +149,14 @@ if prompt := st.chat_input("Escribe tu respuesta aquí..."):
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
 
-            # --- BOTÓN DE WHATSAPP DINÁMICO ---
+            # --- BOTÓN DE WHATSAPP ---
             if "julio" in response.text.lower() or "botón de abajo" in response.text.lower():
-                NUMERO_WHATSAPP = "5493810000000" # <-- Poner el número real aquí
-                resumen_falla = f"Hola Julio, el Asistente Virtual me sugirió contactarte. Tengo un equipo con esta falla: '{prompt}'"
+                NUMERO_WHATSAPP = "5493810000000" # <-- Poner el número real
+                resumen_falla = f"Hola Julio, el Asistente Virtual me sugirió contactarte luego de intentar varias pruebas. Tengo un equipo con esta falla: '{prompt}'"
                 link_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(resumen_falla)}"
                 st.markdown(f'<a href="{link_wa}" target="_blank" class="whatsapp-btn">📲 CONTACTAR A JULIO (TÉCNICO)</a>', unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"Error de conexión. Detalle técnico: {e}")
 
-# Footer de Copyright
 st.markdown('<div class="copyright">© 2026 Soporte Técnico Virtual</div>', unsafe_allow_html=True)
