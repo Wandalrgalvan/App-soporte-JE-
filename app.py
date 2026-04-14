@@ -8,12 +8,15 @@ import time
 # --- 1. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Soporte Técnico Virtual", page_icon="🔧", layout="centered")
 
-# --- 2. CSS EXTREMO (MINIMALISTA) ---
+# --- 2. CSS LIMPIO Y SEGURO (Sin romper el celular) ---
 st.markdown("""
 <style>
+    /* Fondo Oscuro */
     .stApp { background-color: #1E1E1E !important; color: #FFFFFF !important; }
     #MainMenu, footer, header {visibility: hidden;}
-    [data-testid="stChatMessageContainer"] { padding-bottom: 120px !important; }
+    
+    /* Espacio inferior para que no se superponga el chat */
+    [data-testid="stChatMessageContainer"] { padding-bottom: 150px !important; }
     
     /* Burbujas de chat */
     [data-testid="chatAvatarIcon-assistant"] { background-color: #333333; }
@@ -22,45 +25,23 @@ st.markdown("""
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { background-color: #FFD700; }
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) p { color: #000000 !important; font-weight: 500;}
 
-    /* Footer Fijo */
-    [data-testid="stBottom"] > div {
-        position: fixed; bottom: 0; left: 0; width: 100%;
-        background-color: #1E1E1E !important; z-index: 1000;
-        padding: 10px 0; border-top: 1px solid #333333;
-    }
-
     /* Input de Chat */
     .stChatInputContainer { border-radius: 20px !important; border: 1px solid #333333 !important; background-color: #333333 !important; }
     .stChatInputContainer textarea { color: #FFFFFF !important; }
 
-    /* HACK VISUAL: Reducir el Uploader a un simple botón */
+    /* Estilo del Uploader de Fotos (Garantizado que se vea) */
     [data-testid="stFileUploader"] {
-        width: 60px !important; 
-        margin-top: -15px !important;
-        margin-left: 10px !important;
+        background-color: #1E1E1E;
     }
     [data-testid="stFileUploader"] section {
-        padding: 0 !important;
-        background-color: transparent !important;
-        border: none !important;
-    }
-    [data-testid="stFileUploader"] button {
+        padding: 15px !important;
+        border-radius: 15px !important;
+        border: 1px dashed #FFD700 !important;
         background-color: #333333 !important;
-        color: #FFD700 !important;
-        border: 1px solid #333333 !important;
-        border-radius: 50% !important; /* Botón redondo */
-        width: 45px !important;
-        height: 45px !important;
-        padding: 0 !important;
-        font-size: 0px !important; /* Oculta el texto 'Browse files' */
     }
-    [data-testid="stFileUploader"] button::after {
-        content: "📷"; /* Pone el ícono de la cámara */
-        font-size: 20px;
-        display: block;
-    }
-    /* Ocultar textos basura del uploader */
-    [data-testid="stFileUploader"] small, [data-testid="stFileUploader"] span, .st-emotion-cache-1golkje { display: none !important; }
+    /* Ocultar la frase "Drag and drop file here" para que quede minimalista */
+    [data-testid="stFileUploader"] section > div > span { display: none !important; }
+    [data-testid="stFileUploader"] small { display: none !important; }
 
     /* Botón WhatsApp */
     .whatsapp-btn {
@@ -71,18 +52,26 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. CABECERA NEUTRAL ---
-st.markdown("<h3 style='text-align: center; color: #FFD700; margin-top: 10px;'>SOPORTE TÉCNICO VIRTUAL</h3>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #CCCCCC; margin-top: -10px;'>Asistente de diagnóstico</p>", unsafe_allow_html=True)
+# --- 3. CABECERA CON EL ICONO DE HERRAMIENTA ---
+st.markdown("""
+<div style="text-align: center; margin-top: 10px; color: #FFD700;">
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4zM10.2 10.2l-1.4 1.4c-.6.6-1.5.6-2.1 0l-1.4-1.4c-.6-.6-.6-1.5 0-2.1l1.4-1.4c.6-.6 1.5-.6 2.1 0l1.4 1.4c.7.6.7 1.5 0 2.1z"/>
+        <path d="M19.5 7.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" opacity=".5"/>
+    </svg>
+    <h3 style='color: #FFD700; margin-top: 10px; margin-bottom: 0px; font-weight: 700;'>SOPORTE TÉCNICO VIRTUAL</h3>
+    <p style='color: #CCCCCC; margin-top: 0px;'>Asistente de diagnóstico visual</p>
+</div>
+""", unsafe_allow_html=True)
+st.divider()
 
 # --- 4. CONFIGURACIÓN DE IA ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
-    st.error("Falta la API Key.")
+    st.error("Falta la API Key en Streamlit.")
     st.stop() 
 
-# Usamos el modelo ultrarrápido y multimodal actual
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 SYSTEM_PROMPT = """Eres un asistente técnico virtual paciente. 
@@ -90,7 +79,7 @@ SYSTEM_PROMPT = """Eres un asistente técnico virtual paciente.
 2. Da UNA sola indicación a la vez, esperando que el usuario responda si funcionó. No des listas largas.
 3. Agota las opciones de arreglo casero (reset, limpieza, cables).
 4. SÓLO si el problema no se resuelve Y es de Smart TV, Audio o Refrigeración, usa esta frase exacta: "Este problema requiere ser revisado por un técnico. Te facilito el contacto para coordinar."
-5. NUNCA derives fallas de impresoras, celulares o PCs a taller; si no tienen arreglo casero, diles que busquen soporte especializado de esa marca.
+5. NUNCA derives fallas de impresoras, celulares o PCs a taller; diles que busquen soporte especializado de esa marca.
 """
 
 def stream_text(text):
@@ -100,7 +89,7 @@ def stream_text(text):
 
 # --- 5. LÓGICA DE CHAT ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Contame: ¿Qué equipo te está dando problemas? (Podés tocar la 📷 abajo para subir una foto del error o del modelo)."}]
+    st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Contame: ¿Qué equipo te está dando problemas? (Podés usar el botón de abajo para adjuntar una foto del modelo o la falla)."}]
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -108,43 +97,41 @@ for message in st.session_state.messages:
         if "image" in message:
             st.image(message["image"], width=200)
 
-# --- 6. FOOTER Y UPLOADER (Lado a Lado) ---
-st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
-cols = st.columns([0.15, 0.85])
+# --- 6. CONTROLES DEL USUARIO (Foto y Chat separados de forma segura) ---
 
-with cols[0]:
-    uploaded_file = st.file_uploader("Upload", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
+# Uploader nativo con recuadro punteado amarillo para que no se pierda
+uploaded_file = st.file_uploader("📷 Subir foto de la falla (Opcional)", type=["jpg", "png", "jpeg"])
 
-with cols[1]:
-    if prompt := st.chat_input("Escribí acá..."):
-        msg_dict = {"role": "user", "content": prompt}
-        if uploaded_file:
-            user_image = Image.open(uploaded_file)
-            msg_dict["image"] = user_image
-        st.session_state.messages.append(msg_dict)
+# Input de chat nativo
+if prompt := st.chat_input("Escribí tu mensaje acá..."):
+    msg_dict = {"role": "user", "content": prompt}
+    
+    if uploaded_file:
+        user_image = Image.open(uploaded_file)
+        msg_dict["image"] = user_image
         
-        with st.chat_message("user"):
-            st.markdown(prompt)
-            if uploaded_file:
-                st.image(user_image, width=200)
+    st.session_state.messages.append(msg_dict)
+    
+    with st.chat_message("user"):
+        st.markdown(prompt)
+        if uploaded_file:
+            st.image(user_image, width=200)
 
-        with st.chat_message("assistant"):
-            try:
-                full_prompt = [SYSTEM_PROMPT]
-                for msg in st.session_state.messages:
-                    if msg["content"]: full_prompt.append(msg["content"])
-                    if "image" in msg: full_prompt.append(msg["image"])
+    with st.chat_message("assistant"):
+        try:
+            full_prompt = [SYSTEM_PROMPT]
+            for msg in st.session_state.messages:
+                if msg["content"]: full_prompt.append(msg["content"])
+                if "image" in msg: full_prompt.append(msg["image"])
+            
+            response = model.generate_content(full_prompt)
+            st.write_stream(stream_text(response.text))
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+
+            if "contacto para coordinar" in response.text.lower():
+                # Reemplaza aquí por el número correcto
+                link = f"https://wa.me/5493810000000?text=Hola,%20el%20asistente%20virtual%20me%20derivó.%20Mi%20falla%20es:%20{urllib.parse.quote(prompt)}"
+                st.markdown(f'<a href="{link}" target="_blank" class="whatsapp-btn">📲 CONTACTAR AL TÉCNICO</a>', unsafe_allow_html=True)
                 
-                response = model.generate_content(full_prompt)
-                st.write_stream(stream_text(response.text))
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
-
-                if "contacto para coordinar" in response.text.lower():
-                    # Reemplaza aquí por el número correcto
-                    link = f"https://wa.me/5493810000000?text=Hola,%20el%20asistente%20virtual%20me%20derivó.%20Mi%20falla%20es:%20{urllib.parse.quote(prompt)}"
-                    st.markdown(f'<a href="{link}" target="_blank" class="whatsapp-btn">📲 CONTACTAR AL TÉCNICO</a>', unsafe_allow_html=True)
-                    
-            except Exception as e:
-                st.error("Hubo un error de conexión con la IA. Intentá de nuevo.")
-
-st.markdown('</div>', unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Hubo un error de conexión con la IA. Detalle: {e}")
