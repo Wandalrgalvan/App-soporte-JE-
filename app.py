@@ -12,9 +12,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- 2. CSS PERSONALIZADO (BLINDADO Y MODERNO) ---
-# He forzado estilos para un acabado premium, neutral y 100% modo oscuro.
-# He re-diseñado el "File Uploader" para que sea sleek, dark y discreto.
+# --- 2. CSS PERSONALIZADO (BLINDADO, SLEEK, MINIMALISTA Y MULTIMODAL) ---
+# He forzado estilos para un acabado neutral, inmersivo, y con un cargador de fotos minimalista.
 custom_css = """
 <style>
     /* Fondo general gris carbón (#1E1E1E) */
@@ -31,7 +30,7 @@ custom_css = """
     /* Contenedor de chat principal con padding para cabecera y footer */
     [data-testid="stChatMessageContainer"] {
         padding-top: 130px !important; /* Espacio para la cabecera fija */
-        padding-bottom: 150px !important; /* Espacio para el file uploader y el input */
+        padding-bottom: 160px !important; /* Espacio para el file uploader y el input */
     }
 
     /* --- CABECERA FIJA (REDISEÑADA, NEUTRAL Y SIN LOGO) --- */
@@ -87,7 +86,7 @@ custom_css = """
         font-weight: 500;
     }
 
-    /* --- FOOTER FIJO (REDISEÑADO, SLEEK, DARK UPLOADER) --- */
+    /* --- FOOTER FIJO (REDISEÑADO, SLEEK, MINIMALISTA) --- */
     /* Este contenedor se fija abajo para tener el uploader y el input juntos */
     [data-testid="stBottom"] > div {
         position: fixed;
@@ -113,8 +112,8 @@ custom_css = """
         font-size: 1rem;
     }
 
-    /* ESTILO PARA EL FILE UPLOADER (SLEEK, DARK, DISCRETO) */
-    /* Lo hemos hecho pequeño, sin bordes feos y con colores oscuros */
+    /* ESTILO PARA EL FILE UPLOADER MINIMALISTA (ELIMINANDO DRAG & DROP Y BULK) */
+    /* Lo hemos hecho sleek, sin bordes feos y con colores oscuros */
     [data-testid="stFileUploader"] {
         background-color: #333333 !important;
         border-radius: 12px !important;
@@ -175,7 +174,7 @@ st.markdown('<p class="subtitle-header">Asistente de diagnóstico paso a paso</p
 st.markdown('</div>', unsafe_allow_html=True)
 
 
-# --- 4. CONFIGURACIÓN DE IA (BLINDADA CONTRA ERRORES 404) ---
+# --- 4. CONFIGURACIÓN DE IA (BLINDADA CONTRA ERRORES 404 Y MULTIMODAL VERSIÓN ESTABLE) ---
 # Hemos cambiado a 'gemini-pro-vision'. Este es el modelo multimodal estable de Google.
 # Es el "patrón de oro" para MVP públicos. Es más poderoso que cualquier modelo 1.0 y soporta imágenes perfectamente.
 try:
@@ -185,24 +184,25 @@ except KeyError:
     st.error("Falta la API Key en los secretos de Streamlit (st.secrets).")
     st.stop() 
 
-# MODELO MULTIMODAL ESTABLE
+# MODELO MULTIMODAL ESTABLE (Blindado contra 404)
 model = genai.GenerativeModel('gemini-pro-vision')
 
 
-# SYSTEM PROMPT ESTRICTO (LA PERSONALIDAD NEUTRAL DEL BOT)
+# SYSTEM PROMPT ESTRICTO (LA PERSONALIDAD NEUTRAL DEL BOT, EXHAUSTIVO, SECUENCIAL Y ÚLTIMO RECURSO)
 # Se incluye como el primer mensaje del chat para el modelo de visión.
-SYSTEM_PROMPT = """Tus reglas de comportamiento como el asistente técnico virtual del taller:
-1. Sé neutral, empático, amable y usa un lenguaje claro.
-2. Identifica el equipo y la falla. Si es de los rubros que reparan (Smart TV, Audio, Refrigeración), da un diagnóstico breve.
-3. IMPORTANTE: Soporte Nivel 1 es prioridad. Guía al usuario pacientemente, pidiéndole una sola prueba a la vez (ej. desenchufar el TV 10 minutos, reiniciar el equipo, limpiar filtros). NO des listas largas de instrucciones.
+SYSTEM_PROMPT = """Tus reglas de comportamiento como el asistente técnico virtual neutral y paciente de Soporte Técnico Virtual:
+1. Sé neutral, empático, amable y usa un lenguaje claro. NO hables en nombre de 'Julio' hasta que sea necesario derivar.
+2. Identifica el equipo y la falla. Puedes ayudar con CUALQUIER equipo electrónico (Smart TV, Audio, Refrigeración, Computadoras, Celulares, etc.).
+3. IMPORTANTE: Soporte Nivel 1 es prioridad. Guía al usuario pacientemente, pidiéndole UNA sola prueba a la vez (ej. desenchufar el TV 10 minutos, reiniciar el equipo, limpiar filtros, buscar actualizaciones). NO des listas largas de instrucciones. ESPERA la respuesta del usuario.
 4. Si analizas una imagen, explica con detalle lo que ves y úsalo para el diagnóstico paso a paso.
-5. NO derivations prematuras: Solo sugiere ir al taller si el problema es de hardware o requiere desarme, Y la guía paso a paso no lo solucionó.
+5. NO derivations prematuras: Solo sugiere ir al taller si el problema es de hardware o requiere desarme, Y la guía paso a paso no lo solucionó, Y el equipo pertenece a los rubros (Smart TV, Audio, Refrigeración).
 6. PROHIBIDO inventar precios, dar presupuestos exactos o salir de tu rol neutral.
-7. Si determina que se necesita reparación, use la siguiente frase: "Este problema ya requiere ser revisado bien por un técnico profesional. Te facilito el contacto de Julio para coordinar."
+7. Si determina que se necesita reparación y pertenece a los rubros (TV, Audio, Refrigeración), use la siguiente frase estricta: "Este problema ya requiere ser revisado bien por un técnico profesional. Te facilito el contacto de Julio, un especialista de mucha confianza en Tafí Viejo, para coordinar."
+8. Si se trata de un celular o computadora con falla física grave, dígale neutralmente que requiere un servicio técnico de su especialidad, pero NO ofrezca a 'Julio'.
 """
 
 
-# --- 5. MANEJO DEL CHAT Y ESTADO DE SESIÓN (MULTIMODAL) ---
+# --- 5. MANEJO DEL CHAT Y ESTADO DE SESIÓN (MULTIMODAL BLINDADO CON LÓGICA DE ÚLTIMO RECURSO) ---
 # Hemos reescrito la lógica de historial. No usamos start_chat.
 # Gestionamos la lista de mensajes manualmente para un control total de imágenes y texto.
 
@@ -210,7 +210,7 @@ SYSTEM_PROMPT = """Tus reglas de comportamiento como el asistente técnico virtu
 if "messages" not in st.session_state:
     st.session_state.messages = []
     # Mensaje de bienvenida inicial del bot
-    initial_greeting = "¡Hola! Soy tu asistente de Soporte Técnico Virtual. 😊 Para empezar, cuéntame: ¿Qué equipo te está dando problemas y cuál es el síntoma?"
+    initial_greeting = "¡Hola! Soy tu asistente de Soporte Técnico Virtual. 😊 Contame: ¿Qué equipo te está dando problemas y cuál es el síntoma?"
     st.session_state.messages.append({"role": "assistant", "content": initial_greeting})
 
 # Renderizar historial de mensajes (con el CSS personalizado aplicado)
@@ -218,21 +218,22 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         if "image" in message:
+            # Mostramos la imagen que se subió
             st.image(message["image"], caption="Imagen subida por ti", width=250)
 
 
-# --- 6. FOOTER FIJO (REDISEÑADO, SLEEK DARK UPLOADER E INPUT) ---
+# --- 6. FOOTER FIJO (REDISEÑADO, MINIMALISTA DARK UPLOADER E INPUT) ---
 # Hemos creado un contenedor en la parte inferior para agrupar el file uploader y el input de chat.
 # He re-diseñado el "File Uploader" para que sea sleek, dark, y tenga un label claro.
 st.markdown('<div class="fixed-footer">', unsafe_allow_html=True)
 
 # Usamos columnas en la parte inferior para organizar el uploader y el input
-cols = st.columns([0.25, 0.75]) # Columnas en proporción móvil
+# Proporción móvil sleek (25% / 75%)
+cols = st.columns([0.25, 0.75])
 
 with cols[0]:
     # FILE UPLOADER (SLEEK DARK GRAY, DISCRETO, SIN DRAG & DROP)
-    # He cambiado la palabra y el label para un acabado neutral.
-    # El uploader se integra discretamente en el flujo.
+    # He cambiado la palabra y el label para un acabado neutral y elegante.
     label_text = "📷 Opcional: Foto de la falla o el modelo"
     uploaded_file = st.file_uploader(label_text, type=["jpg", "png", "jpeg"], label_visibility="visible")
 
@@ -253,7 +254,7 @@ with cols[1]:
             if uploaded_file:
                 st.image(user_image, caption="Tu imagen", width=250)
 
-        # GENERAR RESPUESTA DE LA IA (MULTIMODAL BLINDADA)
+        # GENERAR RESPUESTA DE LA IA (MULTIMODAL BLINDADA CON LÓGICA PASO A PASO)
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             
@@ -269,7 +270,7 @@ with cols[1]:
                     full_prompt_list.append(msg["image"])
             
             try:
-                # Llamada multimodal estable blindada
+                # Llamada multimodal estable blindada (v1beta1 o multimodal estable, dependiendo de st.secrets)
                 response = model.generate_content(full_prompt_list)
                 bot_response = response.text
                 
@@ -281,14 +282,16 @@ with cols[1]:
 
                 # --- 7. BOTÓN DE WHATSAPP (Aparece dinámicamente) ---
                 # Usamos la frase estricta del prompt como disparador
-                disparadores_taller = ["profesional. Te facilito", "te sugiero ir al taller", "para presupuestar"]
+                disparadores_taller = ["profesional. Te facilito", "coordinar"]
                 if any(disparador in bot_response for disparador in disparadores_taller):
                     NUMERO_WHATSAPP = "5493810000000" # <-- Reemplazar por el real
                     # Resumen para el mensaje de WhatsApp (Incluye el historial de chat digerido)
-                    mensaje_wa = f"Hola Julio, soy un cliente y hablé con tu Asistente Virtual. Tengo un equipo con esta falla: '{prompt}'. Me sugirió contactarte para presupuestar."
+                    mensaje_wa = f"Hola Julio, soy un cliente y hablé con tu Asistente Virtual. Tengo un equipo con esta falla: '{prompt}'. Me sugirió contactarte."
                     url_wa = f"https://wa.me/{NUMERO_WHATSAPP}?text={urllib.parse.quote(mensaje_wa)}"
                     # Botón de WhatsApp con el CSS personalizado aplicado
-                    st.markdown(f'<a href="{url_wa}" target="_blank" class="whatsapp-btn">📲 SOLICITAR PRESUPUESTO POR WHATSAPP</a>', unsafe_allow_html=True)
+                    st.markdown(f'<a href="{url_wa}" target="_blank" class="whatsapp-btn">📲 CONTACTAR AL TÉCNICO POR WHATSAPP</a>', unsafe_allow_html=True)
                     
             except Exception as e:
                 message_placeholder.markdown(f"Hubo un error al conectar con el asistente de Soporte Técnico. Por favor, intenta de nuevo. Detalle: {e}")
+
+st.markdown('</div>', unsafe_allow_html=True) # Cierra el footer fijo
