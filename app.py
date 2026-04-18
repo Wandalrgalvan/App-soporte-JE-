@@ -2,48 +2,35 @@ import streamlit as st
 import google.generativeai as genai
 import urllib.parse
 from PIL import Image
-import os
 import time
 
 # --- 1. CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Soporte Técnico Virtual", page_icon="🔧", layout="centered")
 
-# --- 2. CSS LIMPIO Y SEGURO (Sin romper el celular) ---
+# --- 2. CSS LIMPIO Y SEGURO ---
 st.markdown("""
 <style>
-    /* Fondo Oscuro */
     .stApp { background-color: #1E1E1E !important; color: #FFFFFF !important; }
     #MainMenu, footer, header {visibility: hidden;}
-    
-    /* Espacio inferior para que no se superponga el chat */
     [data-testid="stChatMessageContainer"] { padding-bottom: 150px !important; }
     
-    /* Burbujas de chat */
     [data-testid="chatAvatarIcon-assistant"] { background-color: #333333; }
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) { background-color: #333333; border-left: 3px solid #FFD700; }
     [data-testid="chatAvatarIcon-user"] { background-color: #FFD700; color: #000000;}
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) { background-color: #FFD700; }
     [data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) p { color: #000000 !important; font-weight: 500;}
 
-    /* Input de Chat */
     .stChatInputContainer { border-radius: 20px !important; border: 1px solid #333333 !important; background-color: #333333 !important; }
     .stChatInputContainer textarea { color: #FFFFFF !important; }
 
-    /* Estilo del Uploader de Fotos (Garantizado que se vea) */
-    [data-testid="stFileUploader"] {
-        background-color: #1E1E1E;
-    }
+    [data-testid="stFileUploader"] { background-color: #1E1E1E; }
     [data-testid="stFileUploader"] section {
-        padding: 15px !important;
-        border-radius: 15px !important;
-        border: 1px dashed #FFD700 !important;
-        background-color: #333333 !important;
+        padding: 15px !important; border-radius: 15px !important;
+        border: 1px dashed #FFD700 !important; background-color: #333333 !important;
     }
-    /* Ocultar la frase "Drag and drop file here" para que quede minimalista */
     [data-testid="stFileUploader"] section > div > span { display: none !important; }
     [data-testid="stFileUploader"] small { display: none !important; }
 
-    /* Botón WhatsApp */
     .whatsapp-btn {
         display: block; width: calc(100% - 30px); background-color: #25D366; color: #FFFFFF !important;
         text-align: center; padding: 15px; border-radius: 12px; font-weight: 600; text-decoration: none;
@@ -52,7 +39,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. CABECERA CON EL ICONO DE HERRAMIENTA ---
+# --- 3. CABECERA (Sin subtítulo) ---
 st.markdown("""
 <div style="text-align: center; margin-top: 10px; color: #FFD700;">
     <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -60,19 +47,30 @@ st.markdown("""
         <path d="M19.5 7.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" opacity=".5"/>
     </svg>
     <h3 style='color: #FFD700; margin-top: 10px; margin-bottom: 0px; font-weight: 700;'>SOPORTE TÉCNICO VIRTUAL</h3>
-    <p style='color: #CCCCCC; margin-top: 0px;'>Asistente de diagnóstico visual</p>
 </div>
 """, unsafe_allow_html=True)
 st.divider()
 
-# --- 4. CONFIGURACIÓN DE IA ---
+# --- 4. CONFIGURACIÓN DE IA (Buscador Automático de Modelos) ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
     st.error("Falta la API Key en Streamlit.")
     st.stop() 
 
-model = genai.GenerativeModel('gemini-1.5-flash')
+@st.cache_resource
+def obtener_mejor_modelo():
+    try:
+        modelos = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        for preferido in ['models/gemini-1.5-flash', 'models/gemini-1.5-pro', 'models/gemini-pro-vision']:
+            if preferido in modelos:
+                return preferido
+        return modelos[0] if modelos else 'gemini-1.5-flash'
+    except Exception:
+        return 'gemini-1.5-flash'
+
+nombre_modelo = obtener_mejor_modelo()
+model = genai.GenerativeModel(nombre_modelo)
 
 SYSTEM_PROMPT = """Eres un asistente técnico virtual paciente. 
 1. Exige saber la marca y modelo del equipo. Si mandan foto, analízala minuciosamente (luces, códigos de error en pantallas, etc.).
@@ -89,7 +87,7 @@ def stream_text(text):
 
 # --- 5. LÓGICA DE CHAT ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Contame: ¿Qué equipo te está dando problemas? (Podés usar el botón de abajo para adjuntar una foto del modelo o la falla)."}]
+    st.session_state.messages = [{"role": "assistant", "content": "¡Hola! Contame: ¿Qué equipo te está dando problemas? (Podés usar el recuadro de abajo para adjuntar una foto del modelo o la falla)."}]
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -97,12 +95,9 @@ for message in st.session_state.messages:
         if "image" in message:
             st.image(message["image"], width=200)
 
-# --- 6. CONTROLES DEL USUARIO (Foto y Chat separados de forma segura) ---
-
-# Uploader nativo con recuadro punteado amarillo para que no se pierda
+# --- 6. CONTROLES DEL USUARIO ---
 uploaded_file = st.file_uploader("📷 Subir foto de la falla (Opcional)", type=["jpg", "png", "jpeg"])
 
-# Input de chat nativo
 if prompt := st.chat_input("Escribí tu mensaje acá..."):
     msg_dict = {"role": "user", "content": prompt}
     
@@ -129,9 +124,8 @@ if prompt := st.chat_input("Escribí tu mensaje acá..."):
             st.session_state.messages.append({"role": "assistant", "content": response.text})
 
             if "contacto para coordinar" in response.text.lower():
-                # Reemplaza aquí por el número correcto
                 link = f"https://wa.me/5493810000000?text=Hola,%20el%20asistente%20virtual%20me%20derivó.%20Mi%20falla%20es:%20{urllib.parse.quote(prompt)}"
                 st.markdown(f'<a href="{link}" target="_blank" class="whatsapp-btn">📲 CONTACTAR AL TÉCNICO</a>', unsafe_allow_html=True)
                 
         except Exception as e:
-            st.error(f"Hubo un error de conexión con la IA. Detalle: {e}")
+            st.error(f"Hubo un error de conexión con la IA. Asegúrate de haber actualizado el archivo requirements.txt. Detalle: {e}")
