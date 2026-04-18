@@ -39,7 +39,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. CABECERA (Sin subtítulo) ---
+# --- 3. CABECERA ---
 st.markdown("""
 <div style="text-align: center; margin-top: 10px; color: #FFD700;">
     <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -51,7 +51,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 st.divider()
 
-# --- 4. CONFIGURACIÓN DE IA (Buscador Automático de Modelos) ---
+# --- 4. CONFIGURACIÓN DE IA ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 except KeyError:
@@ -72,12 +72,14 @@ def obtener_mejor_modelo():
 nombre_modelo = obtener_mejor_modelo()
 model = genai.GenerativeModel(nombre_modelo)
 
-SYSTEM_PROMPT = """Eres un asistente técnico virtual paciente. 
+# EL CEREBRO ACTUALIZADO (Con Adaptabilidad al Contexto)
+SYSTEM_PROMPT = """Eres un asistente técnico virtual paciente y con gran sentido común. 
 1. Exige saber la marca y modelo del equipo. Si mandan foto, analízala minuciosamente (luces, códigos de error en pantallas, etc.).
-2. Da UNA sola indicación a la vez, esperando que el usuario responda si funcionó. No des listas largas.
-3. Agota las opciones de arreglo casero (reset, limpieza, cables).
-4. SÓLO si el problema no se resuelve Y es de Smart TV, Audio o Refrigeración, usa esta frase exacta: "Este problema requiere ser revisado por un técnico. Te facilito el contacto para coordinar."
-5. NUNCA derives fallas de impresoras, celulares o PCs a taller; diles que busquen soporte especializado de esa marca.
+2. ADAPTABILIDAD AL CONTEXTO (CRÍTICO): Escucha atentamente al usuario. Si el usuario te da una justificación lógica (ej. "cortaron el agua", "hubo un corte de luz", "ya revisé el enchufe"), ADAPTA tu respuesta a esa realidad. NO insistas con pasos que el usuario ya descartó lógicamente.
+3. Da UNA sola indicación a la vez, esperando que el usuario responda si funcionó. No des listas largas.
+4. Agota las opciones de arreglo casero lógicas según la situación.
+5. SÓLO si el problema no se resuelve Y es de Smart TV, Audio o Refrigeración, usa esta frase exacta: "Este problema requiere ser revisado por un técnico. Te facilito el contacto para coordinar."
+6. NUNCA derives fallas de impresoras, celulares o PCs a taller; diles que busquen soporte especializado de esa marca.
 """
 
 def stream_text(text):
@@ -112,6 +114,7 @@ if prompt := st.chat_input("Escribí tu mensaje acá..."):
         if uploaded_file:
             st.image(user_image, width=200)
 
+    # --- RESPUESTA DE LA IA CON ANIMACIÓN DE "PENSANDO..." ---
     with st.chat_message("assistant"):
         try:
             full_prompt = [SYSTEM_PROMPT]
@@ -119,7 +122,11 @@ if prompt := st.chat_input("Escribí tu mensaje acá..."):
                 if msg["content"]: full_prompt.append(msg["content"])
                 if "image" in msg: full_prompt.append(msg["image"])
             
-            response = model.generate_content(full_prompt)
+            # Aquí agregamos el spinner (ruedita giratoria) mientras procesa
+            with st.spinner("Pensando..."):
+                response = model.generate_content(full_prompt)
+            
+            # Una vez que responde, el spinner desaparece y hace el efecto máquina de escribir
             st.write_stream(stream_text(response.text))
             st.session_state.messages.append({"role": "assistant", "content": response.text})
 
